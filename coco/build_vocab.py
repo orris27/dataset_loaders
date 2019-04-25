@@ -26,28 +26,28 @@ class Vocabulary(object):
     def __len__(self):
         return len(self.word2idx)
 
-def build_vocab(json, threshold):
+def build_vocab(caption_path, min_count):
     """Build a simple vocabulary wrapper."""
-    coco = COCO(json)
+    coco = COCO(caption_path)
     counter = Counter()
     ids = coco.anns.keys()
-    for i, id in enumerate(ids):
-        caption = str(coco.anns[id]['caption'])
+    for i, id in enumerate(ids): # id: 48
+        caption = str(coco.anns[id]['caption']) # caption: 'A very clean and well decorated empty bathroom'
         tokens = nltk.tokenize.word_tokenize(caption.lower())
         counter.update(tokens)
 
         if (i+1) % 1000 == 0:
             print("[{}/{}] Tokenized the captions.".format(i+1, len(ids)))
 
-    # If the word frequency is less than 'threshold', then the word is discarded.
-    words = [word for word, cnt in counter.items() if cnt >= threshold]
+    # If the word frequency is less than 'min_count', then the word is discarded.
+    words = [word for word, cnt in counter.items() if cnt >= min_count] # words[:10]: ['a', 'very', 'clean', 'and', 'well', 'decorated', 'empty', 'bathroom', 'panoramic', 'view']
 
     # Create a vocab wrapper and add some special tokens.
     vocab = Vocabulary()
-    vocab.add_word('<pad>')
-    vocab.add_word('<start>')
-    vocab.add_word('<end>')
-    vocab.add_word('<unk>')
+    vocab.add_word('<pad>') # padding
+    vocab.add_word('<sos>') # start of sentence
+    vocab.add_word('<eos>') # end of sentence
+    vocab.add_word('<unk>') # unknown
 
     # Add the words to the vocabulary.
     for i, word in enumerate(words):
@@ -55,9 +55,9 @@ def build_vocab(json, threshold):
     return vocab
 
 def main(args):
-    vocab = build_vocab(json=args.caption_path, threshold=args.threshold)
+    vocab = build_vocab(caption_path=args.caption_path, min_count=args.min_count)
     vocab_path = args.vocab_path
-    with open(vocab_path, 'wb') as f:
+    with open(vocab_path, 'wb') as f: # vocab: Vocabulay object that contains idx2word, word2idx.
         pickle.dump(vocab, f)
     print("Total vocabulary size: {}".format(len(vocab)))
     print("Saved the vocabulary wrapper to '{}'".format(vocab_path))
@@ -70,7 +70,7 @@ if __name__ == '__main__':
                         help='path for train annotation file')
     parser.add_argument('--vocab_path', type=str, default='./data/vocab.pkl', 
                         help='path for saving vocabulary wrapper')
-    parser.add_argument('--threshold', type=int, default=4, 
-                        help='minimum word count threshold')
+    parser.add_argument('--min_count', type=int, default=4, 
+                        help='minimum word count min_count')
     args = parser.parse_args()
     main(args)
