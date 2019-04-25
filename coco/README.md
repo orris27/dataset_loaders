@@ -13,9 +13,10 @@ chmod +x download.sh
 ./download.sh
 
 # Buil vocabulary & resize the image to fit ResNet
-python build_vocab.py
-python resize.py
+python build_vocab.py # build Vocabulary object which contains idx2word and word2idx
+python resize.py # resize the images to 224x224 for ResNet
 ```
+
 
 ## Demo
 See [demo.ipynb](./demo.ipynb)
