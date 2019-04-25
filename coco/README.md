@@ -8,12 +8,14 @@ make
 python setup.py build
 python setup.py install
 
+# Prepare data
+chmod +x download.sh
+./download.sh
+
 # Buil vocabulary & resize the image to fit ResNet
 python build_vocab.py
 python resize.py
 ```
 
 ## Demo
-```
-
-```
+See demo.ipynb
