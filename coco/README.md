@@ -1,4 +1,4 @@
-## Use
+## How to use
 Reference: [this](https://github.com/yunjey/pytorch-tutorial/tree/master/tutorials/03-advanced/image_captioning)
 ```
 # Install pycoco
@@ -18,4 +18,4 @@ python resize.py
 ```
 
 ## Demo
-See demo.ipynb
+See [demo.ipynb](./demo.ipynb)
