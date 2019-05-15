@@ -9,3 +9,11 @@ unzip ./data/train2014.zip -d ./data/
 rm ./data/train2014.zip 
 unzip ./data/val2014.zip -d ./data/ 
 rm ./data/val2014.zip 
+
+cd data
+git clone https://github.com/pdollar/coco.git 
+cd coco/PythonAPI 
+make 
+python setup.py build
+python setup.py install
+
