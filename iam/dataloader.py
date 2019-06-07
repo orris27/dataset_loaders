@@ -171,10 +171,10 @@ def vectorization(c, char_dict):
 
 class IAM():
     # load_data()
-    def __init__(self, batch_size=50, seq_length=300, scale_factor = 10, limit = 500,
+    def __init__(self, data_dir=, batch_size, seq_length=300, scale_factor = 10, limit = 500,
                  chars='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz ',
                  points_per_char=25):
-        self.data_dir = "./data"
+        self.data_dir = data_dir
         self.batch_size = batch_size
         self.seq_length = seq_length
         self.scale_factor = scale_factor # divide data by this factor
