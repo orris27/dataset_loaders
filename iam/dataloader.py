@@ -171,6 +171,10 @@ def vectorization(c, char_dict):
 
 class IAM():
     '''
+        Note: 
+            + The return data is point offset rather than absolute coordinates
+            + The reason why each sample contain exactly "seq_length" points is because we simply select the first "seq_length" points in 1 sample
+    
         Public methods:
             1. __init__
             2. reset_batch_pointer: reset the batch pointer to the start of data
@@ -219,7 +223,8 @@ class IAM():
         
     def next_batch(self):
         '''
-            x_batch: offset
+            x_batch: the offset from the previous point, except for the first point in a stroke. The offsets are calculated in 1 stroke. (B, seq_length, 3)
+            y_batch: shifted version of x_batch # (B, seq_length, 3)
         '''
         x_batch = []
         y_batch = []
@@ -227,7 +232,7 @@ class IAM():
         c_batch = []
         for i in range(self.batch_size):
             data = self.data[self.pointer]
-            x_batch.append(np.copy(data[0:self.seq_length]))
+            x_batch.append(np.copy(data[0:self.seq_length])) # extract the first "seq_length" points
             y_batch.append(np.copy(data[1:self.seq_length + 1]))
             c_vec_batch.append(self.c_vec[self.pointer])
             c_batch.append(self.c[self.pointer])
@@ -303,7 +308,7 @@ class IAM():
 #                 n_point += len(stroke[i])
             stroke_data = np.zeros((num_points, 3), dtype=np.int16)
 
-            prev_x = 0
+            prev_x = 0 # corresponds to 1 stroke
             prev_y = 0
             counter = 0
 
@@ -332,7 +337,7 @@ class IAM():
                         return None
 
         # build stroke database of every xml file inside iam database
-        strokes = []
+        strokes = [] # its element represents 1 handwriting image
         c = []
 
         for i in range(len(filelist)):
@@ -358,8 +363,8 @@ class IAM():
         self.data = []
         self.c = []
         counter = 0
-        for i, data in enumerate(self.raw_data):
-            if len(data) > (self.seq_length+2) and len(self.raw_c[i]) >= 10:
+        for i, data in enumerate(self.raw_data): # data: 1 handwriting image
+            if len(data) > (self.seq_length + 2) and len(self.raw_c[i]) >= 10:
                 # removes large gaps from the data
                 data = np.minimum(data, self.limit)
                 data = np.maximum(data, -self.limit)
