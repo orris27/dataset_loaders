@@ -255,11 +255,11 @@ class IAM():
                     counter += 1
             return stroke_data
 
-        def find_c_of_xml(filename):
+        def find_c_of_xml(filename): # filename: data/raw/lineStrokes/b07/b07-580/b07-580z-05.xml
             num = int(filename[-6: -4])
             print(filename)
             #txt = open(filename.replace(data_dir, './data/ascii')[0:-7] + '.txt', 'r').readlines()
-            txt = open(filename.replace(data_dir, data_dir + '/ascii')[0:-7] + '.txt', 'r').readlines()
+            txt = open(filename.replace(data_dir + '/lineStrokes', data_dir + '/ascii')[0:-7] + '.txt', 'r').readlines()
             for i, t in enumerate(txt):
                 if t[0:4] == 'CSR:':
                     if (i + num + 1 < len(txt)):
