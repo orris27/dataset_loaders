@@ -259,6 +259,8 @@ class IAM():
             num = int(filename[-6: -4])
             #txt = open(filename.replace(data_dir, './data/ascii')[0:-7] + '.txt', 'r').readlines()
             print(filename)
+            print(data_dir + '/lineStrokes')
+            print(data_dir + '/ascii')
             print(filename.replace(data_dir + '/lineStrokes', data_dir + '/ascii')[0:-7])
             txt = open(filename.replace(data_dir + '/lineStrokes', data_dir + '/ascii')[0:-7] + '.txt', 'r').readlines()
 
