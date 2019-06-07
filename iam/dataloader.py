@@ -182,17 +182,17 @@ class IAM():
         self.chars = chars
         self.points_per_char = points_per_char
 
-        data_file = os.path.join(self.data_dir, "strokes_training_data.cpkl")
+        data_pkl = os.path.join(self.data_dir, "strokes_training_data.cpkl")
         raw_data_dir = self.data_dir+"/lineStrokes"
 
-        if not (os.path.exists(data_file)) :
+        if not (os.path.exists(data_pkl)) :
             print("creating training data pkl file from raw source")
-            self.preprocess(raw_data_dir, data_file)
+            self.preprocess(raw_data_dir, data_pkl)
 
-        self.load_preprocessed(data_file)
+        self.load_preprocessed(data_pkl)
         self.reset_batch_pointer()
 
-    def preprocess(self, data_dir, data_file):
+    def preprocess(self, data_dir, data_pkl):
         # create data file from raw xml files from iam handwriting source.
 
         # build the list of xml files
@@ -257,7 +257,8 @@ class IAM():
 
         def find_c_of_xml(filename):
             num = int(filename[-6: -4])
-            txt = open(filename.replace(data_dir, './data/ascii')[0:-7] + '.txt', 'r').readlines()
+            #txt = open(filename.replace(data_dir, './data/ascii')[0:-7] + '.txt', 'r').readlines()
+            txt = open(filename.replace(data_dir, data_dir + '/ascii')[0:-7] + '.txt', 'r').readlines()
             for i, t in enumerate(txt):
                 if t[0:4] == 'CSR:':
                     if (i + num + 1 < len(txt)):
@@ -279,15 +280,17 @@ class IAM():
                     strokes.append(convert_stroke_to_array(getStrokes(filelist[i])))
 
 
-        f = open(data_file,"wb")
-        pickle.dump((strokes, c), f, protocol=2)
-        f.close()
+        #f = open(data_pkl,"wb")
+        with open(data_pkl, 'wb') as f:
+            pickle.dump((strokes, c), f, protocol=2)
+        #f.close()
 
 
-    def load_preprocessed(self, data_file):
-        f = open(data_file,"rb")
-        (self.raw_data, self.raw_c) = pickle.load(f)
-        f.close()
+    def load_preprocessed(self, data_pkl):
+        #f = open(data_pkl,"rb")
+        with open(data_pkl, 'rb') as f:
+            (self.raw_data, self.raw_c) = pickle.load(f)
+        #f.close()
 
         # goes thru the list, and only keeps the text entries that have more than seq_length points
         self.data = []
