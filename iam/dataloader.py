@@ -170,10 +170,32 @@ def vectorization(c, char_dict):
     return x
 
 class IAM():
+    '''
+        Public methods:
+            1. __init__
+            2. reset_batch_pointer: reset the batch pointer to the start of data
+            3. next_batch: return a batch of samples starting from the batch pointer
+            4. random_batch: randomly return a batch of samples
+        Public members:
+            1. data_dir
+            2. batch_size
+            3. seq_length: the length of points in one sample, e.g., 300
+            4. scale_factor: divide every point coordinate by this factor
+            5. limit: remove large noisy gaps in the data
+            6. chars: set of characters that appear in the data
+            7. pointers_per_char
+            8. num_batches
+            9. char2indices
+            10. max_U: max number of characters in one sample
+        Private methods:
+            1. _preprocess: preprocess iam data and store points and characters information to a pickle file
+            2. _load_preprocessed: load the pickle file and build the final data
+        
+    '''
     # load_data()
-    def __init__(self, data_dir, batch_size, seq_length=300, scale_factor = 10, limit = 500,
+    def __init__(self, data_dir, batch_size, seq_length=300, scale_factor = 10,
                  chars='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz ',
-                 points_per_char=25):
+                 points_per_char=25, limit = 500):
         self.data_dir = data_dir
         self.batch_size = batch_size
         self.seq_length = seq_length
@@ -187,12 +209,57 @@ class IAM():
 
         if not (os.path.exists(data_pkl)) :
             print("creating training data pkl file from raw source")
-            self.preprocess(raw_data_dir, data_pkl)
+            self._preprocess(raw_data_dir, data_pkl)
 
-        self.load_preprocessed(data_pkl)
+        self._load_preprocessed(data_pkl)
         self.reset_batch_pointer()
 
-    def preprocess(self, raw_data_dir, data_pkl):
+    def reset_batch_pointer(self):
+        self.pointer = 0
+        
+    def next_batch(self):
+        '''
+            x_batch: offset
+        '''
+        x_batch = []
+        y_batch = []
+        c_vec_batch = []
+        c_batch = []
+        for i in range(self.batch_size):
+            data = self.data[self.pointer]
+            x_batch.append(np.copy(data[0:self.seq_length]))
+            y_batch.append(np.copy(data[1:self.seq_length + 1]))
+            c_vec_batch.append(self.c_vec[self.pointer])
+            c_batch.append(self.c[self.pointer])
+            
+            self.pointer += 1
+            if (self.pointer >= len(self.data)):
+                self.pointer = 0
+                
+        return np.asarray(x_batch), np.asarray(y_batch), np.asarray(c_vec_batch), np.asarray(c_batch)
+
+    def random_batch(self):
+        '''
+            randomly return a batch of samples. (This function does not influence self.pointer)
+        '''
+        x_batch = []
+        y_batch = []
+        c_vec_batch = []
+        c_batch = []
+
+        pointer = random.randint(0, len(self.data) - 1)
+        for i in range(self.batch_size):
+            data = self.data[pointer]
+            x_batch.append(np.copy(data[0:self.seq_length]))
+            y_batch.append(np.copy(data[1:self.seq_length + 1]))
+            c_vec_batch.append(self.c_vec[pointer])
+            c_batch.append(self.c[pointer])
+        return x_batch, y_batch, c_vec_batch, c_batch
+
+
+
+        
+    def _preprocess(self, raw_data_dir, data_pkl):
         '''
             raw_data_dir: e.g., data/raw/lineStrokes
         '''
@@ -202,11 +269,11 @@ class IAM():
                 filelist.append(dirName+"/"+fname)
 
         # function to read each individual xml file
-        def getStrokes(filename):
+        def get_strokes(filename):
             tree = ET.parse(filename)
             root = tree.getroot()
 
-            result = []
+            strokes = []
 
             x_offset = 1e20
             y_offset = 1e20
@@ -223,41 +290,37 @@ class IAM():
                 points = []
                 for point in stroke.findall('Point'):
                     points.append([float(point.attrib['x'])-x_offset,float(point.attrib['y'])-y_offset])
-                result.append(points)
+                strokes.append(points)
 
-            return result
+            return strokes
 
         # converts a list of arrays into a 2d numpy int16 array
-        def convert_stroke_to_array(stroke):
+        def convert_strokes_to_array(strokes):
 
-            n_point = 0
-            for i in range(len(stroke)):
-                n_point += len(stroke[i])
-            stroke_data = np.zeros((n_point, 3), dtype=np.int16)
+#             n_point = 0
+            num_points = sum([len(stroke) for stroke in strokes])
+#             for i in range(len(stroke)):
+#                 n_point += len(stroke[i])
+            stroke_data = np.zeros((num_points, 3), dtype=np.int16)
 
             prev_x = 0
             prev_y = 0
             counter = 0
 
-            for j in range(len(stroke)):
-                for k in range(len(stroke[j])):
-                    stroke_data[counter, 0] = int(stroke[j][k][0]) - prev_x
-                    stroke_data[counter, 1] = int(stroke[j][k][1]) - prev_y
-                    prev_x = int(stroke[j][k][0])
-                    prev_y = int(stroke[j][k][1])
+            for j in range(len(strokes)):
+                for k in range(len(strokes[j])):
+                    stroke_data[counter, 0] = int(strokes[j][k][0]) - prev_x
+                    stroke_data[counter, 1] = int(strokes[j][k][1]) - prev_y
+                    prev_x = int(strokes[j][k][0])
+                    prev_y = int(strokes[j][k][1])
                     stroke_data[counter, 2] = 0
-                    if (k == (len(stroke[j])-1)): # end of stroke
+                    if (k == (len(strokes[j])-1)): # end of stroke
                         stroke_data[counter, 2] = 1
                     counter += 1
             return stroke_data
 
         def find_c_of_xml(filename): # filename: e.g., data/raw/lineStrokes/b07/b07-580/b07-580z-05.xml
             num = int(filename[-6: -4])
-            #txt = open(filename.replace(data_dir, './data/ascii')[0:-7] + '.txt', 'r').readlines()
-            #print(filename)
-            #print(data_dir + '/lineStrokes')
-            #print(data_dir + '/ascii')
-            #print(filename.replace(data_dir + '/lineStrokes', data_dir + '/ascii')[0:-7])
             txt = open(filename.replace(raw_data_dir, self.data_dir + '/ascii')[0:-7] + '.txt', 'r').readlines()
 
             for i, t in enumerate(txt):
@@ -278,7 +341,7 @@ class IAM():
                 c_i = find_c_of_xml(filelist[i])
                 if c_i:
                     c.append(c_i)
-                    strokes.append(convert_stroke_to_array(getStrokes(filelist[i])))
+                    strokes.append(convert_strokes_to_array(get_strokes(filelist[i])))
 
 
         #f = open(data_pkl,"wb")
@@ -286,18 +349,15 @@ class IAM():
             pickle.dump((strokes, c), f, protocol=2)
         #f.close()
 
-
-    def load_preprocessed(self, data_pkl):
-        #f = open(data_pkl,"rb")
+        
+    def _load_preprocessed(self, data_pkl):
         with open(data_pkl, 'rb') as f:
             (self.raw_data, self.raw_c) = pickle.load(f)
-        #f.close()
 
         # goes thru the list, and only keeps the text entries that have more than seq_length points
         self.data = []
         self.c = []
         counter = 0
-
         for i, data in enumerate(self.raw_data):
             if len(data) > (self.seq_length+2) and len(self.raw_c[i]) >= 10:
                 # removes large gaps from the data
@@ -309,55 +369,15 @@ class IAM():
                 self.c.append(self.raw_c[i])
                 counter += int(len(data)/((self.seq_length+2))) # number of equiv batches this datapoint is worth
 
-        print("%d strokes available" % len(self.data))
+#         print("%d strokes available" % len(self.data))
         # minus 1, since we want the ydata to be a shifted version of x data
         self.num_batches = int(counter / self.batch_size)
         self.max_U = int(self.seq_length / self.points_per_char)
-        self.char_to_indices = dict((c, i + 1) for i, c in enumerate(self.chars)) # 0 for unknown
+        self.char2indices = dict((c, i + 1) for i, c in enumerate(self.chars)) # 0 for unknown
         self.c_vec = []
         for i in range(len(self.c)):
             if len(self.c[i]) >= self.max_U:
                 self.c[i] = self.c[i][:self.max_U]
             else:
                 self.c[i] = self.c[i] + ' ' * (self.max_U - len(self.c[i]))
-            self.c_vec.append(vectorization(self.c[i], self.char_to_indices))
-
-    def next_batch(self):
-        x_batch = []
-        y_batch = []
-        c_vec_batch = []
-        c_batch = []
-        for i in range(self.batch_size):
-            data = self.data[self.pointer]
-            x_batch.append(np.copy(data[0:self.seq_length]))
-            y_batch.append(np.copy(data[1:self.seq_length + 1]))
-            c_vec_batch.append(self.c_vec[self.pointer])
-            c_batch.append(self.c[self.pointer])
-            self.tick_batch_pointer()
-        return x_batch, y_batch, c_vec_batch, c_batch
-
-    def random_batch(self):
-        x_batch = []
-        y_batch = []
-        c_vec_batch = []
-        c_batch = []
-
-        pointer = random.randint(0, len(self.data) - 1)
-        for i in range(self.batch_size):
-            data = self.data[pointer]
-            x_batch.append(np.copy(data[0:self.seq_length]))
-            y_batch.append(np.copy(data[1:self.seq_length + 1]))
-            c_vec_batch.append(self.c_vec[pointer])
-            c_batch.append(self.c[pointer])
-        return x_batch, y_batch, c_vec_batch, c_batch
-
-
-
-    def tick_batch_pointer(self):
-        self.pointer += 1
-        if (self.pointer >= len(self.data)):
-            self.pointer = 0
-
-    def reset_batch_pointer(self):
-        self.pointer = 0
-
+            self.c_vec.append(vectorization(self.c[i], self.char2indices))
