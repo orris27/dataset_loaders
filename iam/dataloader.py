@@ -192,13 +192,11 @@ class IAM():
         self.load_preprocessed(data_pkl)
         self.reset_batch_pointer()
 
-    def preprocess(self, data_dir, data_pkl):
+    def preprocess(self, raw_data_dir, data_pkl):
         # create data file from raw xml files from iam handwriting source.
 
         # build the list of xml files
         filelist = []
-        # Set the directory you want to start from
-        rootDir = data_dir
         for dirName, subdirList, fileList in os.walk(rootDir):
             #print('Found directory: %s' % dirName)
             for fname in fileList:
@@ -258,11 +256,11 @@ class IAM():
         def find_c_of_xml(filename): # filename: e.g., data/raw/lineStrokes/b07/b07-580/b07-580z-05.xml
             num = int(filename[-6: -4])
             #txt = open(filename.replace(data_dir, './data/ascii')[0:-7] + '.txt', 'r').readlines()
-            print(filename)
-            print(data_dir + '/lineStrokes')
-            print(data_dir + '/ascii')
-            print(filename.replace(data_dir + '/lineStrokes', data_dir + '/ascii')[0:-7])
-            txt = open(filename.replace(data_dir + '/lineStrokes', data_dir + '/ascii')[0:-7] + '.txt', 'r').readlines()
+            #print(filename)
+            #print(data_dir + '/lineStrokes')
+            #print(data_dir + '/ascii')
+            #print(filename.replace(data_dir + '/lineStrokes', data_dir + '/ascii')[0:-7])
+            txt = open(filename.replace(raw_data_dir, self.data_dir + '/ascii')[0:-7] + '.txt', 'r').readlines()
 
             for i, t in enumerate(txt):
                 if t[0:4] == 'CSR:':
