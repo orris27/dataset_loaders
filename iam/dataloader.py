@@ -257,6 +257,7 @@ class IAM():
 
         def find_c_of_xml(filename):
             num = int(filename[-6: -4])
+            print(filename)
             #txt = open(filename.replace(data_dir, './data/ascii')[0:-7] + '.txt', 'r').readlines()
             txt = open(filename.replace(data_dir, data_dir + '/ascii')[0:-7] + '.txt', 'r').readlines()
             for i, t in enumerate(txt):
