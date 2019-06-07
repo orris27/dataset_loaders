@@ -193,14 +193,12 @@ class IAM():
         self.reset_batch_pointer()
 
     def preprocess(self, raw_data_dir, data_pkl):
-        # create data file from raw xml files from iam handwriting source.
-
-        # build the list of xml files
+        '''
+            raw_data_dir: e.g., data/raw/lineStrokes
+        '''
         filelist = []
-        for dirName, subdirList, fileList in os.walk(rootDir):
-            #print('Found directory: %s' % dirName)
+        for dirName, subdirList, fileList in os.walk(raw_data_dir):
             for fname in fileList:
-                #print('\t%s' % fname)
                 filelist.append(dirName+"/"+fname)
 
         # function to read each individual xml file
