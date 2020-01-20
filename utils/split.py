@@ -35,7 +35,6 @@ for classname in os.listdir(data_dir):
     os.makedirs(os.path.join(data_dir, 'train', classname), exist_ok=True)
     os.makedirs(os.path.join(data_dir, 'val', classname), exist_ok=True)
     for filename in train_files:
-        print(os.path.join(data_dir, classname, filename))
         shutil.move(os.path.join(data_dir, classname, filename), os.path.join(data_dir, 'train', classname))
     for filename in test_files:
         shutil.move(os.path.join(data_dir, classname, filename), os.path.join(data_dir, 'val', classname))
